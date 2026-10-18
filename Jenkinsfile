@@ -58,7 +58,9 @@ pipeline {
                 script{
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''
-            
+                        git config user.email "302735558+Vageesh1998@users.noreply.github.com" 
+                        git config user.name "Vageesh1998"
+                        
                         cat deploy/deploy.yaml
                         sed -i "s|image: .*|image: vageeshhiremath/cicd-e2e:${BUILD_NUMBER}|g" deploy/deploy.yaml
                         cat deploy/deploy.yaml
@@ -67,7 +69,7 @@ pipeline {
                         git commit -m "Updated the deploy yaml | Jenkins Pipeline Build #${BUILD_NUMBER}"
                         
                         git remote rm origin-fork || true
-                        git remote add origin-fork https://${GIT_USERNAME}:${GIT_PASSWORD}@://github.com
+                        git remote add origin-fork https://${GIT_USERNAME}:${GIT_PASSWORD}@github.com/Vageesh1998/cicd-end-to-end.git
                         git push origin-fork HEAD:main
                         '''                    
                     }

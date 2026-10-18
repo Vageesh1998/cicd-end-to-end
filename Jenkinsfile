@@ -21,19 +21,26 @@ pipeline {
                 script{
                     sh '''
                     echo 'Buid Docker Image'
-                    docker build -t abhishekf5/cicd-e2e:${BUILD_NUMBER} .
+                    docker build -t vageeshhiremath/cicd-e2e:${BUILD_NUMBER} .
                     '''
                 }
             }
         }
 
-        stage('Push the artifacts'){
-           steps{
-                script{
-                    sh '''
-                    echo 'Push to Repo'
-                    docker push abhishekf5/cicd-e2e:${BUILD_NUMBER}
-                    '''
+        stage('Push Artifacts to DockerHub') {
+            steps {
+                script {
+                    // Uses your newly created Docker Hub write-token credentials
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        // 1. Securely log in to Docker Hub using standard input streams
+                        sh "echo \${DOCKER_PASSWORD} | docker login -u \${DOCKER_USERNAME} --password-stdin"
+                        
+                        // 2. Push the built image tagged with the unique build number
+                        sh "docker push \${DOCKER_USERNAME}/cicd-e2e:\${BUILD_NUMBER}"
+                        
+                        // 3. Log out immediately to clean up secure session tokens from the workspace
+                        sh "docker logout"
+                    }
                 }
             }
         }
@@ -51,16 +58,14 @@ pipeline {
                 script{
                     withCredentials([usernamePassword(credentialsId: 'github-token', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
                         sh '''
-                        # 1. Update the file inside the deploy/ directory path
+            
                         cat deploy/deploy.yaml
                         sed -i "s/32/${BUILD_NUMBER}/g" deploy/deploy.yaml
                         cat deploy/deploy.yaml
                         
-                        # 2. Stage the file with its correct path structure
                         git add deploy/deploy.yaml
                         git commit -m "Updated the deploy yaml | Jenkins Pipeline Build #${BUILD_NUMBER}"
                         
-                        # 3. Clean and push using dynamic vault credentials back to your repository
                         git remote rm origin-fork || true
                         git remote add origin-fork https://${GIT_USERNAME}:${GIT_PASSWORD}@://github.com
                         git push origin-fork HEAD:main
